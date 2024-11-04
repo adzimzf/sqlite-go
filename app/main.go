@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	// Available if you need it!
 	// "github.com/xwb1989/sqlparser"
 )
@@ -44,37 +45,27 @@ type DatabaseHeader struct {
 func main() {
 	databaseFilePath := os.Args[1]
 	command := os.Args[2]
+	databaseFile, err := os.Open(databaseFilePath)
+	if err != nil {
+		log.Fatal(err)
+	}
 
+	databaseHeader, err := ReadDatabaseHeader(databaseFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	rootPage, err := NewTableLeafPage(databaseFile, int(databaseHeader.PageSize), 1)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	records, err := rootPage.GetRecords()
+	if err != nil {
+		log.Fatal(err)
+	}
 	switch command {
 	case ".dbinfo":
-		databaseFile, err := os.Open(databaseFilePath)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		databaseHeader, err := ReadDatabaseHeader(databaseFile)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		rootPage, err := NewTableLeafPage(databaseFile, int(databaseHeader.PageSize), 1)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		//rootPage.
-
-		//log.Println(rootPage)
-
-		//countTables, err := CountTables(databaseFile, databaseHeader)
-		//if err != nil {
-		//	log.Fatal(err)
-		//}
-
-		records, err := rootPage.GetRecords()
-		if err != nil {
-			log.Fatal(err)
-		}
 
 		// You can use print statements as follows for debugging, they'll be visible when running tests.
 		fmt.Println("Logs from your program will appear here!")
@@ -83,6 +74,34 @@ func main() {
 		fmt.Printf("database page size: %v\n", databaseHeader.PageSize)
 
 		fmt.Printf("number of tables: %v\n", len(records))
+	case ".tables":
+		for _, record := range records {
+			data, f, err := record.FieldData(0)
+			if err != nil {
+				log.Fatal(err)
+			}
+			if f != Blob {
+				log.Fatal("the first column type isn't blob")
+			}
+
+			tableType := string(data.([]byte))
+			if tableType != "table" {
+				continue
+			}
+
+			fieldData, _, err := record.FieldData(2)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			// skip the internal tables
+			if strings.HasPrefix(string(fieldData.([]byte)), "sqlite_") {
+				continue
+			}
+
+			fmt.Printf("%s ", string(fieldData.([]byte)))
+		}
+		fmt.Printf("\n")
 	default:
 		fmt.Println("Unknown command", command)
 		os.Exit(1)

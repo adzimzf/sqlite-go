@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"math"
 	"os"
 )
 
@@ -12,6 +13,37 @@ type Record struct {
 	RowID   int64
 	Header  RecordHeader
 	Payload []byte
+}
+
+func (r *Record) FieldData(idx int) (any, FieldType, error) {
+	field := r.Header.Fields[idx]
+	switch field.FieldType {
+	case Null:
+		return nil, field.FieldType, nil
+	case Int8:
+		return int8(r.Payload[field.Offset : field.Offset+1][0]), field.FieldType, nil
+	case Int16:
+		return binary.BigEndian.Uint16(r.Payload[field.Offset : field.Offset+2]), field.FieldType, nil
+	case Int24:
+		return int32(binary.BigEndian.Uint16(r.Payload[field.Offset : field.Offset+3])), field.FieldType, nil
+	case Int32:
+		return int32(binary.BigEndian.Uint16(r.Payload[field.Offset : field.Offset+4])), field.FieldType, nil
+	case Int48:
+		return int64(binary.BigEndian.Uint16(r.Payload[field.Offset : field.Offset+6])), field.FieldType, nil
+	case Int64:
+		return int64(binary.BigEndian.Uint16(r.Payload[field.Offset : field.Offset+8])), field.FieldType, nil
+	case Float64:
+		return math.Float64frombits(uint64(binary.BigEndian.Uint16(r.Payload[field.Offset : field.Offset+8]))),
+			field.FieldType, nil
+	case String:
+		data := r.Payload[field.Offset : int64(field.Offset)+field.Size]
+		return string(data), field.FieldType, nil
+	case Blob:
+		data := r.Payload[field.Offset : int64(field.Offset)+field.Size]
+		return data, field.FieldType, nil
+	default:
+		return nil, field.FieldType, fmt.Errorf("unimplemented")
+	}
 }
 
 type RecordHeader struct {
@@ -72,6 +104,7 @@ func NewRecordHeader(payload []byte) (RecordHeader, error) {
 		fields = append(fields, RecordField{
 			Offset:    uint16(curOffset),
 			FieldType: fieldType,
+			Size:      fieldSize,
 		})
 
 		curOffset += fieldSize
@@ -85,6 +118,7 @@ func NewRecordHeader(payload []byte) (RecordHeader, error) {
 
 type RecordField struct {
 	Offset    uint16
+	Size      int64
 	FieldType FieldType
 }
 
