@@ -64,6 +64,23 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	// in sqlite the 3rd argument will doesn't start with a dot (.) it's a sql query.
+	if !strings.HasPrefix(command, ".") {
+
+		sqlInfo, err := ExtractQueryInfo(command)
+		if err != nil {
+			log.Println(err)
+		}
+		rows, err := ExecuteSelectQuery(databaseFile, sqlInfo)
+		if err != nil {
+			return
+		}
+
+		fmt.Println(rows.RowsString(sqlInfo.SelectFields))
+
+		return
+	}
 	switch command {
 	case ".dbinfo":
 
@@ -80,11 +97,11 @@ func main() {
 			if err != nil {
 				log.Fatal(err)
 			}
-			if f != Blob {
+			if f != String {
 				log.Fatal("the first column type isn't blob")
 			}
 
-			tableType := string(data.([]byte))
+			tableType := data.(string)
 			if tableType != "table" {
 				continue
 			}
@@ -95,14 +112,15 @@ func main() {
 			}
 
 			// skip the internal tables
-			if strings.HasPrefix(string(fieldData.([]byte)), "sqlite_") {
+			if strings.HasPrefix(fieldData.(string), "sqlite_") {
 				continue
 			}
 
-			fmt.Printf("%s ", string(fieldData.([]byte)))
+			fmt.Printf("%s ", fieldData.(string))
 		}
 		fmt.Printf("\n")
 	default:
+
 		fmt.Println("Unknown command", command)
 		os.Exit(1)
 	}
@@ -151,7 +169,10 @@ func GetRootPageNumber(file *os.File) (uint32, error) {
 
 // ReadBTreePage reads a specific page from the database file
 func ReadBTreePage(file *os.File, pageSize int, pageNumber uint32) ([]byte, error) {
-	offset := int64((int(pageNumber)-1)*pageSize) + 100 // header file
+	offset := int64((int(pageNumber) - 1) * pageSize)
+	if pageNumber == 1 {
+		offset = 0
+	}
 	buf := make([]byte, pageSize)
 	_, err := file.ReadAt(buf, offset)
 	if err != nil {

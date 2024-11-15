@@ -39,8 +39,12 @@ func NewTableLeafPage(file *os.File, pageSize, pageNumber int) (*TableLeafPage, 
 			PageType: BTREE_LEAF_TABLE,
 		},
 	}
-
 	nCellBytes := pageData[3:5]
+	filePageSize := 100
+	if pageNumber == 1 {
+		nCellBytes = pageData[filePageSize+3 : filePageSize+5]
+	}
+
 	pageLeaf.Header.CellCount = binary.BigEndian.Uint16(nCellBytes)
 	pageLeaf.Header.PageNumber = uint16(pageNumber)
 	pageLeaf.CellPointers = make([]uint16, pageLeaf.Header.CellCount)
@@ -49,11 +53,15 @@ func NewTableLeafPage(file *os.File, pageSize, pageNumber int) (*TableLeafPage, 
 	//cellContentStart := binary.BigEndian.Uint32(pageData[4:8])
 	ptrOffsite := uint16(0)
 	if pageNumber == 1 {
-		ptrOffsite = 100
+		//ptrOffsite = 100
 	}
 	// Cell pointers start at byte 8
 	for i := 0; i < int(pageLeaf.Header.CellCount); i++ {
 		offset := 8 + i*2
+		if pageNumber == 1 {
+			offset += 100
+		}
+
 		bytePtr := pageData[offset : offset+2]
 		ptr := binary.BigEndian.Uint16(bytePtr)
 		pageLeaf.CellPointers[i] = ptr - ptrOffsite
@@ -76,7 +84,7 @@ func NewTableLeafPage(file *os.File, pageSize, pageNumber int) (*TableLeafPage, 
 		if err != nil {
 			return nil, err
 		}
-		cellData = cellData[n:]
+		cellData = cellData[n : size+1]
 		//log.Println(strconv.FormatInt(rowID, 10))
 
 		pageLeaf.Cells = append(pageLeaf.Cells, TableLeafCell{

@@ -36,10 +36,16 @@ func (r *Record) FieldData(idx int) (any, FieldType, error) {
 		return math.Float64frombits(uint64(binary.BigEndian.Uint16(r.Payload[field.Offset : field.Offset+8]))),
 			field.FieldType, nil
 	case String:
-		data := r.Payload[field.Offset : int64(field.Offset)+field.Size]
+		data := r.Payload[field.Offset:]
+		if idx+1 != len(r.Header.Fields) {
+			data = r.Payload[field.Offset : uint64(field.Offset)+field.Size]
+		}
 		return string(data), field.FieldType, nil
 	case Blob:
-		data := r.Payload[field.Offset : int64(field.Offset)+field.Size]
+		data := r.Payload[field.Offset:]
+		if idx+1 != len(r.Header.Fields) {
+			data = r.Payload[field.Offset : uint64(field.Offset)+field.Size]
+		}
 		return data, field.FieldType, nil
 	default:
 		return nil, field.FieldType, fmt.Errorf("unimplemented")
@@ -51,23 +57,20 @@ type RecordHeader struct {
 }
 
 func NewRecordHeader(payload []byte) (RecordHeader, error) {
-	varintSize, headerLength, err := ReadVarintAt(payload, 0)
-	if err != nil {
-		return RecordHeader{}, err
-	}
+	headerLengthUint64, varintSize := binary.Uvarint(payload)
+
+	headerLength := headerLengthUint64
 	data := payload[varintSize:headerLength]
 	curOffset := headerLength
 
 	var fields []RecordField
 
 	for len(data) != 0 {
-		at, serialType, errLoop := ReadVarintAt(data, 0)
-		if errLoop != nil {
-			return RecordHeader{}, errLoop
-		}
+		serialType, at := binary.Uvarint(data)
+
 		data = data[at:]
 
-		var fieldSize int64
+		var fieldSize uint64
 
 		fieldType := FieldType(serialType)
 		switch fieldType {
@@ -92,10 +95,10 @@ func NewRecordHeader(payload []byte) (RecordHeader, error) {
 		default:
 			if serialType >= 12 && serialType%2 == 0 {
 				fieldSize = (serialType - 12) / 2
-				fieldType = String
+				fieldType = Blob
 			} else if serialType >= 13 && serialType%2 == 1 {
 				fieldSize = (serialType - 13) / 2
-				fieldType = Blob
+				fieldType = String
 			} else {
 				return RecordHeader{}, fmt.Errorf("serial type %d isn't supported", serialType)
 			}
@@ -118,7 +121,7 @@ func NewRecordHeader(payload []byte) (RecordHeader, error) {
 
 type RecordField struct {
 	Offset    uint16
-	Size      int64
+	Size      uint64
 	FieldType FieldType
 }
 
