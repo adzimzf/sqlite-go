@@ -1,2 +1,43 @@
 # Database files used for testing
 *.db
+
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary
+*.test
+
+# Output of the Go coverage tool
+*.out
+
+# Dependency directories (vendor directory if not using modules)
+vendor/
+
+# Go module files
+/go.sum
+/go.work
+/go.work.sum
+
+# IDE-specific files
+.idea/**
+
+# Retain IntelliJ IDEA run configurations
+!.idea/runConfigurations/
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+
+# Build and IDE cache files
+bin/
+pkg/
+.DS_Store
+Thumbs.db
