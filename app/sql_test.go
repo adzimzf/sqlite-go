@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/adzimzf/sqlparser"
+	"github.com/CovenantSQL/sqlparser"
 	"github.com/stretchr/testify/require"
 	"testing"
 )

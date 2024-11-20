@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/adzimzf/sqlparser"
+	sqlparser "github.com/adzimzf/sqlite-go/sql"
 )
 
 type QueryType int32
@@ -97,9 +97,9 @@ func RootSQLVisitor(tree sqlparser.Statement, queryInfo *QueryInfo) error {
 				queryInfo.SelectFields = append(queryInfo.SelectFields, &selExp)
 			}
 			return false, nil
-		case *sqlparser.Union:
+		//case *sqlparser.Union:
 
-		case sqlparser.Comments:
+		//case sqlparser.Comments:
 		// we don't care about comments
 		case sqlparser.TableExprs:
 			exps := node.(sqlparser.TableExprs)
@@ -112,10 +112,10 @@ func RootSQLVisitor(tree sqlparser.Statement, queryInfo *QueryInfo) error {
 			}
 			queryInfo.JoinTables = tblNames
 			return false, nil
-		case *sqlparser.Where:
-		case sqlparser.GroupBy:
-		case sqlparser.OrderBy:
-		case *sqlparser.Limit:
+		//case *sqlparser.Where:
+		//case sqlparser.GroupBy:
+		//case sqlparser.OrderBy:
+		//case *sqlparser.Limit:
 
 		default:
 			return false, fmt.Errorf("RootSQLVisitor unsupported node type: %T", nodeType)
@@ -134,8 +134,8 @@ func TableExprVisitor(node sqlparser.TableExpr, tableName *string) error {
 			return false, nil
 		case sqlparser.TableIdent:
 			return false, nil
-		case *sqlparser.IndexHints:
-			return false, nil
+		//case *sqlparser.IndexHints:
+		//	return false, nil
 		default:
 			return false, fmt.Errorf("TableExpr unsupported node type: %T", nodeType)
 		}

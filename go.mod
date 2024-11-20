@@ -3,7 +3,8 @@ module github.com/adzimzf/sqlite-go
 go 1.22.5
 
 require (
-	github.com/adzimzf/sqlparser v0.0.0-20241104031740-c02851a79928
+	github.com/CovenantSQL/sqlparser v0.0.0-20190618091803-c4a6cf6cebb6
+	github.com/alicebob/sqlittle v1.5.0
 	github.com/stretchr/testify v1.9.0
 )
 
