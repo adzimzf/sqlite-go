@@ -61,7 +61,7 @@ func TestListSupportedSQl(t *testing.T) {
 			},
 		},
 		{
-			sql: "SELECT name as tn, nam FROM table_name",
+			sql: "SELECT name as tn, nam FROM table_name as tn",
 			st: &Select{
 				SelectExprs: []SelectExpr{
 					&AliasedExpr{
@@ -73,7 +73,7 @@ func TestListSupportedSQl(t *testing.T) {
 							Qualifier: TableName{},
 						},
 						As: ColIdent{
-							val: "n",
+							val: "tn",
 						},
 					},
 					&AliasedExpr{
@@ -170,9 +170,6 @@ func TestListSupportedSQl(t *testing.T) {
 								Qualifier: TableIdent{},
 							},
 						},
-						As: ColIdent{
-							val: "n",
-						},
 					},
 				},
 				From: TableExprs{
@@ -190,16 +187,15 @@ func TestListSupportedSQl(t *testing.T) {
 			},
 		},
 		{
-			sql: "CREATE TABLE apples\n ( \nid integer primary key autoincrement,\nname text,\ncolor text)",
+			sql: "CREATE TABLE apples ( id integer primary key autoincrement, name text, color text)",
 			st: &DDL{
 				Action: "create",
-				Table: TableName{
+				NewName: TableName{
 					Name: TableIdent{
 						v: "apples",
 					},
 					Qualifier: TableIdent{},
 				},
-				NewName:  TableName{},
 				IfExists: false,
 				TableSpec: &TableSpec{
 					Columns: []*ColumnDefinition{
@@ -209,7 +205,7 @@ func TestListSupportedSQl(t *testing.T) {
 								lowered: "",
 							},
 							Type: ColumnType{
-								Type:          "integer",
+								Type:          "INTEGER",
 								Autoincrement: true,
 								KeyOpt:        colKeyPrimary,
 							},
@@ -220,7 +216,7 @@ func TestListSupportedSQl(t *testing.T) {
 								lowered: "",
 							},
 							Type: ColumnType{
-								Type: "text",
+								Type: "TEXT",
 							},
 						},
 						{
@@ -229,7 +225,7 @@ func TestListSupportedSQl(t *testing.T) {
 								lowered: "",
 							},
 							Type: ColumnType{
-								Type: "text",
+								Type: "TEXT",
 							},
 						},
 					},

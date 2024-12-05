@@ -130,6 +130,30 @@ type ColumnType struct {
 	KeyOpt ColumnKeyOption
 }
 
+func NewIntegerColumn() ColumnType {
+	return ColumnType{
+		Type: "INTEGER",
+	}
+}
+
+func NewFloatColumn() ColumnType {
+	return ColumnType{
+		Type: "FLOAT",
+	}
+}
+
+func NewTextColumn() ColumnType {
+	return ColumnType{
+		Type: "TEXT",
+	}
+}
+
+func NewBlobColumn() ColumnType {
+	return ColumnType{
+		Type: "BLOB",
+	}
+}
+
 // DescribeType returns the abbreviated type information as required for
 // describe table
 func (ct *ColumnType) DescribeType() string {

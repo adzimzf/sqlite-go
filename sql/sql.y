@@ -331,16 +331,15 @@ column_definition:
 column_type:
    INTEGER
    {
-     $$ = ColumnType{Type: string($1)}
+     $$ = NewIntegerColumn()
    }
-   |
-   TEXT
+   | TEXT
    {
-     $$ = ColumnType{Type: string($1)}
+     $$ = NewTextColumn()
    }
-   BLOB
+   | BLOB
    {
-     $$ = ColumnType{Type: string($1)}
+     $$ = NewBlobColumn()
    }
 
 column_default_opt:
