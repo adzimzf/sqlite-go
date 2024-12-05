@@ -16,6 +16,7 @@ type TableSchemaInfo struct {
 	RawSQL              string
 	IsAutoIncrement     bool
 	AutoIncrementColumn uint64
+	Name                string
 	Columns             []TableColumnInfo
 }
 

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/CovenantSQL/sqlparser"
+	sqlparser "github.com/adzimzf/sqlite-go/sql"
 	"github.com/stretchr/testify/require"
 	"testing"
 )

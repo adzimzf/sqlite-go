@@ -177,13 +177,27 @@ func SelectExprsVisitor(node sqlparser.SQLNode, selectFieldExp *SelectFieldExpre
 }
 
 func TableSchemaVisitor(node sqlparser.SQLNode, info *TableSchemaInfo) error {
-	if _, ok := node.(*sqlparser.DDL); !ok {
+	parse, ok := node.(*sqlparser.DDL)
+	if !ok {
 		return fmt.Errorf("TableSchemaVisitor unsupported node type: %T", node)
 	}
+	if parse.Action != "create" {
+		return fmt.Errorf("TableSchemaVisitor unsupported action type: %T", parse.Action)
+	}
+	info.Name = parse.NewName.Name.String()
+
+	for i, column := range parse.TableSpec.Columns {
+		columnInfo := TableColumnInfo{
+			Idx:  i,
+			Name: "",
+			Type: 0,
+		}
+
+	}
 	return sqlparser.Walk(func(node sqlparser.SQLNode) (kontinue bool, err error) {
-		//switch nodeType := node.(type) {
-		//case *sqlparser.TableSpec:
-		//}
+		switch node.(type) {
+		case *sqlparser.TableSpec:
+		}
 		return true, nil
 	}, node)
 }

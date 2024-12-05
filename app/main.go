@@ -7,8 +7,6 @@ import (
 	"log"
 	"os"
 	"strings"
-	// Available if you need it!
-	// "github.com/xwb1989/sqlparser"
 )
 
 // SQLite header constants
