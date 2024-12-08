@@ -41,3 +41,7 @@ bin/
 pkg/
 .DS_Store
 Thumbs.db
+
+
+# Yacc output
+y.output
