@@ -1,9 +1,42 @@
-package main
+package db
 
 import (
+	"bytes"
 	"encoding/binary"
+	"fmt"
+	"github.com/adzimzf/sqlite-go/constant"
 	"os"
 )
+
+// ReadDatabaseHeader reads and parses the SQLite database header
+func ReadDatabaseHeader(file *os.File) (*DatabaseHeader, error) {
+	var header DatabaseHeader
+	_, err := file.ReadAt(header.HeaderString[:], 0)
+	if err != nil {
+		return nil, err
+	}
+
+	// Verify the SQLite magic string
+	if string(header.HeaderString[:])[:16] != constant.SQLiteMagic {
+		return nil, fmt.Errorf("invalid SQLite database file")
+	}
+
+	// the header page is 2 bytes after the SQLiteMagicString
+	if err := binary.Read(bytes.NewReader(header.HeaderString[16:18]), binary.BigEndian, &header.PageSize); err != nil {
+		return nil, err
+	}
+
+	// Read other header fields
+	//err = binary.Read(file, binary.BigEndian, &header.PageSize)
+	//if err != nil {
+	//	return nil, err
+	//}
+
+	// Continue reading the remaining header fields as needed
+	// For simplicity, we skip parsing all fields in this example
+
+	return &header, nil
+}
 
 // BTreePageType represents the type of a B-tree page
 type BTreePageType byte
@@ -123,4 +156,18 @@ type TableLeafCell struct {
 	Size    int64
 	RowID   int64
 	Payload []byte
+}
+
+// ReadBTreePage reads a specific page from the database file
+func ReadBTreePage(file *os.File, pageSize int, pageNumber uint32) ([]byte, error) {
+	offset := int64((int(pageNumber) - 1) * pageSize)
+	if pageNumber == 1 {
+		offset = 0
+	}
+	buf := make([]byte, pageSize)
+	_, err := file.ReadAt(buf, offset)
+	if err != nil {
+		return nil, err
+	}
+	return buf, nil
 }

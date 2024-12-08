@@ -1,20 +1,23 @@
-package main
+package executor
 
-import "os"
+import (
+	"github.com/adzimzf/sqlite-go/db"
+	"os"
+)
 
 func ExecuteSelectQuery(file *os.File, info QueryInfo) (Rows, error) {
-	db, err := NewDB(file)
+	newDB, err := db.NewDB(file)
 	if err != nil {
 		return nil, err
 	}
 
-	var records []Record
+	var records []db.Record
 	var rows Rows
 
 	// if the select into sqlite_master no need to go to the master
 	for _, table := range info.JoinTables {
 		if table == "sqlite_master" {
-			sqLiteMaster, err := db.FindSQLiteMaster()
+			sqLiteMaster, err := newDB.FindSQLiteMaster()
 			if err != nil {
 				return nil, err
 			}
@@ -25,7 +28,7 @@ func ExecuteSelectQuery(file *os.File, info QueryInfo) (Rows, error) {
 			records = append(records, record...)
 			continue
 		}
-		page, err := db.FindTablePage(table)
+		page, err := newDB.FindTablePage(table)
 		if err != nil {
 			return nil, err
 		}
