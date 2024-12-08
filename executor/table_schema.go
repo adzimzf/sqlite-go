@@ -1,4 +1,6 @@
-package main
+package executor
+
+import "github.com/adzimzf/sqlite-go/db"
 
 type DDLAction int
 
@@ -23,5 +25,5 @@ type TableSchemaInfo struct {
 type TableColumnInfo struct {
 	Idx  uint64
 	Name string
-	Type FieldType
+	Type db.FieldType
 }

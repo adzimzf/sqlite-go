@@ -1,7 +1,8 @@
-package main
+package executor
 
 import (
 	"fmt"
+	"github.com/adzimzf/sqlite-go/db"
 	"log"
 	"strings"
 )
@@ -30,7 +31,7 @@ type RecordTuple []*Tuple
 
 type Rows []RecordTuple
 
-func RecordsToRows(records []Record) (Rows, error) {
+func RecordsToRows(records []db.Record) (Rows, error) {
 	var rows Rows
 	for _, record := range records {
 		var recordTuple RecordTuple
@@ -40,9 +41,9 @@ func RecordsToRows(records []Record) (Rows, error) {
 				return rows, nil
 			}
 			switch fieldType {
-			case Int64:
+			case db.Int64:
 				recordTuple = append(recordTuple, NewInt64Tuple(data.(int64)))
-			case String:
+			case db.String:
 				recordTuple = append(recordTuple, NewStringTuple(data.(string)))
 			default:
 				log.Printf("Unsupported field type %v", fieldType)
