@@ -168,6 +168,8 @@ func SelectExprsVisitor(node sqlparser.SQLNode, selectFieldExp *SelectFieldExpre
 		case sqlparser.SelectExprs:
 
 		case *sqlparser.AliasedExpr:
+		case *sqlparser.ColName:
+			selectFieldExp.ColName = node.(*sqlparser.ColName).Name.String()
 
 		default:
 			return false, fmt.Errorf("SelectExprsVisitor unsupported node type: %T", nodeType)
