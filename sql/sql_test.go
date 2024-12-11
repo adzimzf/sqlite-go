@@ -234,6 +234,43 @@ func TestListSupportedSQl(t *testing.T) {
 				VindexCols: nil,
 			},
 		},
+
+		{
+			sql: "SELECT COUNT(*) as col FROM table_name as tn",
+			st: &Select{
+				Cache:    "",
+				Distinct: "",
+				Hints:    "",
+				SelectExprs: []SelectExpr{
+					&AliasedExpr{
+						Expr: &FuncExpr{
+							Name: ColIdent{
+								val: "count",
+							},
+							Exprs: SelectExprs{
+								&StarExpr{},
+							},
+						},
+						As: ColIdent{
+							val: "col",
+						},
+					},
+				},
+				From: TableExprs{
+					&AliasedTableExpr{
+						Expr: TableName{
+							Name: TableIdent{
+								v: "table_name",
+							},
+						},
+						As: TableIdent{
+							v: "tn",
+						},
+					},
+				},
+				Lock: "",
+			},
+		},
 	}
 	//supportedSQL := []string{
 	//,

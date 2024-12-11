@@ -12,6 +12,7 @@ type TupleType int
 const (
 	TupleTypeInt64 TupleType = iota
 	TupleTypeString
+	TupleTypeInt8
 )
 
 type Tuple struct {
@@ -25,6 +26,10 @@ func NewInt64Tuple(value int64) *Tuple {
 
 func NewStringTuple(value string) *Tuple {
 	return &Tuple{value: value, typeID: TupleTypeString}
+}
+
+func NewInt8Tuple(value int8) *Tuple {
+	return &Tuple{value: value, typeID: TupleTypeInt8}
 }
 
 type RecordTuple []*Tuple
@@ -41,6 +46,8 @@ func RecordsToRows(records []db.Record) (Rows, error) {
 				return rows, nil
 			}
 			switch fieldType {
+			case db.Int8:
+				recordTuple = append(recordTuple, NewInt8Tuple(data.(int8)))
 			case db.Int64:
 				recordTuple = append(recordTuple, NewInt64Tuple(data.(int64)))
 			case db.String:
