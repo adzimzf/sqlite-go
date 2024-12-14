@@ -36,7 +36,7 @@ func main() {
 	// in sqlite the 3rd argument will doesn't start with a dot (.) it's a sql query.
 	if !strings.HasPrefix(command, ".") {
 
-		sqlInfo, err := executor.ExtractQueryInfo(command)
+		sqlInfo, err := db.ExtractQueryInfo(command)
 		if err != nil {
 			log.Println(err)
 		}

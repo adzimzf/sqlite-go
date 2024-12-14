@@ -286,8 +286,8 @@ func (ct *ColumnType) walkSubtree(visit Visit) error {
 type ColumnKeyOption int
 
 const (
-	colKeyNone ColumnKeyOption = iota
-	colKeyPrimary
+	ColKeyNone ColumnKeyOption = iota
+	ColKeyPrimary
 	colKeySpatialKey
 	colKeyUnique
 	colKeyUniqueKey

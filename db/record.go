@@ -65,6 +65,7 @@ func NewRecordHeader(payload []byte) (RecordHeader, error) {
 
 	var fields []RecordField
 
+	idx := int64(0)
 	for len(data) != 0 {
 		serialType, at := binary.Uvarint(data)
 
@@ -108,9 +109,11 @@ func NewRecordHeader(payload []byte) (RecordHeader, error) {
 			Offset:    uint16(curOffset),
 			FieldType: fieldType,
 			Size:      fieldSize,
+			FieldIdx:  idx,
 		})
 
 		curOffset += fieldSize
+		idx++
 
 	}
 	return RecordHeader{
@@ -123,6 +126,7 @@ type RecordField struct {
 	Offset    uint16
 	Size      uint64
 	FieldType FieldType
+	FieldIdx  int64
 }
 
 type FieldType int32
@@ -143,6 +147,28 @@ const (
 	Blob
 	String
 )
+
+var fieldTypeMapping = map[FieldType]string{
+	Null:    "NULL",
+	Int8:    "INTEGER",
+	Int16:   "INTEGER",
+	Int24:   "INTEGER",
+	Int32:   "INTEGER",
+	Int48:   "INTEGER",
+	Int64:   "INTEGER",
+	Float64: "FLOAT",
+	Blob:    "BLOB",
+	String:  "TEXT",
+}
+
+func StringToFieldType(s string) (FieldType, bool) {
+	for k, v := range fieldTypeMapping {
+		if v == s {
+			return k, true
+		}
+	}
+	return 0, false
+}
 
 // ParseRecords parses records from a table leaf page
 func ParseRecords(file *os.File, pageData []byte, pageNumber int) ([]Record, error) {

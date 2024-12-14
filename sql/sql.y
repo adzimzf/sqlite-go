@@ -354,11 +354,11 @@ on_update_opt:
 
 column_key_opt:
   {
-    $$ = colKeyNone
+    $$ = ColKeyNone
   }
   | PRIMARY KEY
   {
-    $$ = colKeyPrimary
+    $$ = ColKeyPrimary
   }
 
 autoincrement_opt:
