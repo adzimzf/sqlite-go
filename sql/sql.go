@@ -770,12 +770,12 @@ yydefault:
 	case 49:
 		yyDollar = yyS[yypt-0 : yypt+1]
 		{
-			yyVAL.colKeyOpt = colKeyNone
+			yyVAL.colKeyOpt = ColKeyNone
 		}
 	case 50:
 		yyDollar = yyS[yypt-2 : yypt+1]
 		{
-			yyVAL.colKeyOpt = colKeyPrimary
+			yyVAL.colKeyOpt = ColKeyPrimary
 		}
 	case 51:
 		yyDollar = yyS[yypt-0 : yypt+1]

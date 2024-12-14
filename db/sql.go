@@ -1,4 +1,4 @@
-package executor
+package db
 
 import (
 	"fmt"
@@ -30,6 +30,14 @@ type QueryInfo struct {
 	//LimitNum_            int32                    // SELECT
 	//OffsetNum_           int32                    // SELECT
 	//OrderByExpressions_  []*OrderByExpression     // SELECT
+}
+
+func (q *QueryInfo) FieldNameByTable(tbName string) []string {
+	var fieldNames []string
+	for _, field := range q.SelectFields {
+		fieldNames = append(fieldNames, field.ColName)
+	}
+	return fieldNames
 }
 
 type SelectFieldExpression struct {
@@ -178,28 +186,32 @@ func SelectExprsVisitor(node sqlparser.SQLNode, selectFieldExp *SelectFieldExpre
 	}, node)
 }
 
-//func TableSchemaVisitor(node sqlparser.SQLNode, info *TableSchemaInfo) error {
-//	parse, ok := node.(*sqlparser.DDL)
-//	if !ok {
-//		return fmt.Errorf("TableSchemaVisitor unsupported node type: %T", node)
-//	}
-//	if parse.Action != "create" {
-//		return fmt.Errorf("TableSchemaVisitor unsupported action type: %T", parse.Action)
-//	}
-//	info.Name = parse.NewName.Name.String()
-//
-//	for i, column := range parse.TableSpec.Columns {
-//		columnInfo := TableColumnInfo{
-//			Idx:  i,
-//			Name: "",
-//			Type: 0,
-//		}
-//
-//	}
-//	return sqlparser.Walk(func(node sqlparser.SQLNode) (kontinue bool, err error) {
-//		switch node.(type) {
-//		case *sqlparser.TableSpec:
-//		}
-//		return true, nil
-//	}, node)
-//}
+func TableSchemaVisitor(node sqlparser.SQLNode, info *TableSchemaInfo) error {
+	parse, ok := node.(*sqlparser.DDL)
+	if !ok {
+		return fmt.Errorf("TableSchemaVisitor unsupported node type: %T", node)
+	}
+	if parse.Action != "create" {
+		return fmt.Errorf("TableSchemaVisitor unsupported action type: %T", parse.Action)
+	}
+	info.Name = parse.NewName.Name.String()
+
+	for i, column := range parse.TableSpec.Columns {
+		fieldType, found := StringToFieldType(column.Type.Type)
+		if !found {
+			return fmt.Errorf("TableSchemaVisitor unsupported column type: %T", column.Type.Type)
+		}
+		columnInfo := TableColumnInfo{
+			Idx:  int64(i),
+			Name: column.Name.String(),
+			Type: fieldType,
+		}
+
+		if column.Type.KeyOpt == sqlparser.ColKeyPrimary {
+			info.PrimaryKey = columnInfo
+		}
+		info.Columns = append(info.Columns, columnInfo)
+
+	}
+	return nil
+}

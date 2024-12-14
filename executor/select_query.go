@@ -5,17 +5,19 @@ import (
 	"os"
 )
 
-func ExecuteSelectQuery(file *os.File, info QueryInfo) (Rows, error) {
+func ExecuteSelectQuery(file *os.File, info db.QueryInfo) (db.Rows, error) {
 	newDB, err := db.NewDB(file)
 	if err != nil {
 		return nil, err
 	}
 
 	var records []db.Record
-	var rows Rows
+	var rows db.Rows
+	tableInfoMap := map[string]db.TableSchemaInfo{}
 
 	// if the select into sqlite_master no need to go to the master
 	for _, table := range info.JoinTables {
+
 		if table == "sqlite_master" {
 			sqLiteMaster, err := newDB.FindSQLiteMaster()
 			if err != nil {
@@ -25,31 +27,60 @@ func ExecuteSelectQuery(file *os.File, info QueryInfo) (Rows, error) {
 			if err != nil {
 				return nil, err
 			}
-			records = append(records, record...)
+
+			sqLiteSchema, err := newDB.FindSQLiteSchema()
+			if err != nil {
+				return nil, err
+			}
+
+			rows1, err := db.RecordsToRows(record, sqLiteSchema)
+			if err != nil {
+				return nil, err
+			}
+			rows = append(rows, rows1...)
 			continue
 		}
+
+		tableInfo, err := newDB.FindTableSchema(table)
+		if err != nil {
+			return nil, err
+		}
+		tableInfoMap[table] = tableInfo
+
 		page, err := newDB.FindTablePage(table)
 		if err != nil {
 			return nil, err
 		}
-		record, err := page.GetRecords()
+		fieldNameByTable := info.FieldNameByTable(table)
+		indexList := tableInfo.ColumnIndex(fieldNameByTable...)
+
+		record, err := page.GetRecordsFields(indexList)
 		if err != nil {
 			return nil, err
 		}
-		records = append(records, record...)
-	}
+		rows1, err := db.RecordsToRows(record, tableInfo)
+		if err != nil {
+			return nil, err
+		}
+		rows = append(rows, rows1...)
 
-	rows, err = RecordsToRows(records)
-	if err != nil {
-		return nil, err
+		if len(info.SelectFields) == 1 && info.SelectFields[0].ColName == "*" {
+			newSelectedFields := []*db.SelectFieldExpression{}
+			for _, column := range tableInfo.Columns {
+				newSelectedFields = append(newSelectedFields, &db.SelectFieldExpression{
+					ColName: column.Name,
+				})
+			}
+			info.SelectFields = newSelectedFields
+		}
 	}
 
 	for _, field := range info.SelectFields {
 		if field.IsAgg {
-			if field.ColName == "*" && field.AggType == COUNT_AGGREGATE {
-				return Rows{
+			if field.ColName == "*" && field.AggType == db.COUNT_AGGREGATE {
+				return db.Rows{
 					{
-						NewInt64Tuple(int64(len(records))),
+						db.NewInt64Tuple(int64(len(records))),
 					},
 				}, nil
 			}

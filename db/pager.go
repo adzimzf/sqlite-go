@@ -146,6 +146,31 @@ func (t *TableLeafPage) GetRecords() ([]Record, error) {
 	return records, nil
 }
 
+// GetRecordsFields return the records only for certain fields
+// this method isn't performance wise, that being said it's still okay in early stage.
+func (t *TableLeafPage) GetRecordsFields(fields []int64) ([]Record, error) {
+	records, err := t.GetRecords()
+	if err != nil {
+		return nil, err
+	}
+
+	// an empty filter will return all
+	if len(fields) == 0 {
+		return records, nil
+	}
+
+	newRecords := make([]Record, len(records))
+	for ri, record := range records {
+		var newFields []RecordField
+		for i := 0; i < len(fields); i++ {
+			newFields = append(newFields, record.Header.Fields[fields[i]])
+		}
+		record.Header.Fields = newFields
+		newRecords[ri] = record
+	}
+	return newRecords, nil
+}
+
 type TableHeader struct {
 	PageType   BTreePageType
 	CellCount  uint16

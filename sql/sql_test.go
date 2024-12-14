@@ -207,7 +207,7 @@ func TestListSupportedSQl(t *testing.T) {
 							Type: ColumnType{
 								Type:          "INTEGER",
 								Autoincrement: true,
-								KeyOpt:        colKeyPrimary,
+								KeyOpt:        ColKeyPrimary,
 							},
 						},
 						{
