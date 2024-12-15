@@ -38,7 +38,6 @@ vendor/
 
 # Build and IDE cache files
 bin/
-pkg/
 .DS_Store
 Thumbs.db
 
