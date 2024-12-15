@@ -17,4 +17,9 @@ var tokens = map[string]int{
 	"TEXT":          TEXT,
 	"AUTOINCREMENT": AUTOINCREMENT,
 	"TABLE":         TABLE,
+	"WHERE":         WHERE,
+	"AND":           AND,
+	"OR":            OR,
+	"NOT":           NOT,
+	"=":             EQUAL,
 }

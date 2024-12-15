@@ -18,7 +18,7 @@ type Select struct {
 	Hints       string
 	SelectExprs SelectExprs
 	From        TableExprs
-	//Where       *Where
+	Where       *Where
 	//GroupBy     GroupBy
 	//Having      *Where
 	//OrderBy     OrderBy

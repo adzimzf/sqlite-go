@@ -271,6 +271,115 @@ func TestListSupportedSQl(t *testing.T) {
 				Lock: "",
 			},
 		},
+		{
+			sql: "SELECT COUNT(*) as col FROM table_name as tn WHERE name = 'apples'",
+			st: &Select{
+				Cache:    "",
+				Distinct: "",
+				Hints:    "",
+				SelectExprs: []SelectExpr{
+					&AliasedExpr{
+						Expr: &FuncExpr{
+							Name: ColIdent{
+								val: "count",
+							},
+							Exprs: SelectExprs{
+								&StarExpr{},
+							},
+						},
+						As: ColIdent{
+							val: "col",
+						},
+					},
+				},
+				From: TableExprs{
+					&AliasedTableExpr{
+						Expr: TableName{
+							Name: TableIdent{
+								v: "table_name",
+							},
+						},
+						As: TableIdent{
+							v: "tn",
+						},
+					},
+				},
+				Where: &Where{
+					Type: WhereStr,
+					Expr: &ComparisonExpr{
+						Operator: "=",
+						Left: &ColName{
+							Metadata: nil,
+							Name: ColIdent{
+								val: "name",
+							},
+							Qualifier: TableName{},
+						},
+						Right: &SQLVal{
+							Type: StrVal,
+							Val:  []byte("apples"),
+						},
+						Escape: nil,
+					},
+				},
+				Lock: "",
+			},
+		},
+
+		{
+			sql: "SELECT COUNT(*) as col FROM table_name as tn WHERE name = 'apples'",
+			st: &Select{
+				Cache:    "",
+				Distinct: "",
+				Hints:    "",
+				SelectExprs: []SelectExpr{
+					&AliasedExpr{
+						Expr: &FuncExpr{
+							Name: ColIdent{
+								val: "count",
+							},
+							Exprs: SelectExprs{
+								&StarExpr{},
+							},
+						},
+						As: ColIdent{
+							val: "col",
+						},
+					},
+				},
+				From: TableExprs{
+					&AliasedTableExpr{
+						Expr: TableName{
+							Name: TableIdent{
+								v: "table_name",
+							},
+						},
+						As: TableIdent{
+							v: "tn",
+						},
+					},
+				},
+				Where: &Where{
+					Type: WhereStr,
+					Expr: &ComparisonExpr{
+						Operator: "=",
+						Left: &ColName{
+							Metadata: nil,
+							Name: ColIdent{
+								val: "name",
+							},
+							Qualifier: TableName{},
+						},
+						Right: &SQLVal{
+							Type: StrVal,
+							Val:  []byte("apples"),
+						},
+						Escape: nil,
+					},
+				},
+				Lock: "",
+			},
+		},
 	}
 	//supportedSQL := []string{
 	//,

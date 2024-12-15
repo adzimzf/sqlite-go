@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 )
 
@@ -58,12 +57,18 @@ func (l *Lexer) Scan(lval *yySymType) (int, string) {
 		case ')':
 			l.pos++
 			return RPAREN, ")"
+		case '=':
+			l.pos++
+			return EQUAL, "="
+		case '\'':
+			l.next()
+			return l.scanString(ch)
 
 		// reserved token
-		case '=', ',', ';', '+', '%', '^', '~':
+		case ',', ';', '+', '%', '^', '~':
 			token, ok := tokens[string(ch)]
 			if !ok {
-				return 0, strconv.Itoa(token)
+				return int(ch), string(ch)
 			}
 			l.pos++
 			l.lastToken = []byte(string(ch))
@@ -123,6 +128,35 @@ func (l *Lexer) scanToken(pos int) (int, string) {
 		return token, tok
 	}
 	return IDENTIFIER, tok
+}
+
+func (l *Lexer) scanString(delim uint8) (int, string) {
+	var buf bytes.Buffer
+	for {
+
+		ch := uint8(l.lastChar)
+
+		// reach end of string
+		if ch == delim {
+			l.next()
+			break
+		}
+
+		buf.WriteByte(ch)
+		l.next()
+	}
+
+	return STRING, buf.String()
+}
+
+func (l *Lexer) next() {
+
+	l.pos++
+	if len(l.input) <= l.pos {
+		return
+	}
+	l.lastChar = rune(l.input[l.pos])
+	l.remainingInput = l.input[l.pos:]
 }
 
 func Parse(sql string) (Statement, error) {

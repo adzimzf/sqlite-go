@@ -46,8 +46,12 @@ func setDDL(yylex interface{}, ddl *DDL) {
 %type <selectExprs> select_expression_list
 %type <selectExpr> select_expression
 %type <expr> expression
+%type <expr> value
 %type <expr> value_expression
 %type <expr> function_call_keyword
+%type <expr> condition
+%type <expr> where_expression_opt
+%type <str> compare
 %type <colName> column_name
 %type <colIdent> sql_id
 %type <colIdent> reserved_sql_id
@@ -81,6 +85,11 @@ func setDDL(yylex interface{}, ddl *DDL) {
 %token LPAREN
 %token RPAREN
 %token COUNT
+%token WHERE
+%token AND
+%token OR
+%token NOT
+%token EQUAL
 %token <string> INTEGER
 %token <string> TEXT
 %token <string> BLOB
@@ -91,9 +100,14 @@ func setDDL(yylex interface{}, ddl *DDL) {
 %token TABLE
 %token <str> STAR
 %token <str> IDENTIFIER
-%token <byte> STRING
+%token <str> STRING
 
 %start any_command
+
+%left <bytes> OR
+%left <bytes> AND
+%right <bytes> NOT '!'
+%left <bytes>  '<' '>'
 
 %%
 any_command:
@@ -123,9 +137,9 @@ select_statement:
     }
 
 base_select:
-    SELECT select_expression_list from_opt
+    SELECT select_expression_list from_opt where_expression_opt
     {
-        $$ = &Select{ SelectExprs: $2, From: $3}
+        $$ = &Select{ SelectExprs: $2, From: $3, Where: NewWhere(WhereStr, $4)}
     }
 
 select_expression_list:
@@ -155,6 +169,11 @@ expression:
     }
 
 value_expression:
+  value
+  {
+    $$ = $1
+  }
+  |
   column_name
   {
     $$ = $1
@@ -163,6 +182,32 @@ value_expression:
   function_call_keyword
   {
     $$ = $1
+  }
+
+condition:
+  value_expression compare value_expression
+  {
+    $$ = &ComparisonExpr{Left: $1, Operator: $2, Right: $3}
+  }
+
+value:
+  STRING
+  {
+    $$ = NewStrVal([]byte($1))
+  }
+
+compare:
+  EQUAL
+  {
+    $$ = EqualStr
+  }
+  | '<'
+  {
+    $$ = LessThanStr
+  }
+  | '>'
+  {
+    $$ = GreaterThanStr
   }
 
 column_name:
@@ -232,6 +277,37 @@ from_opt:
   {
     $$ = $2
   }
+
+where_expression_opt:
+  {
+    $$ = nil
+  }
+  |
+  WHERE expression
+  {
+    $$ = $2
+  }
+
+expression:
+   condition
+   {
+     $$ = $1
+   }
+   |
+   expression AND expression
+   {
+     $$ = &AndExpr{Left: $1, Right: $3}
+   }
+   |
+   expression OR expression
+   {
+     $$ = &OrExpr{Left: $1, Right: $3}
+   }
+   |
+   NOT expression
+   {
+     $$ = &NotExpr{Expr: $2}
+   }
 
 table_references:
   table_reference

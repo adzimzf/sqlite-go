@@ -74,6 +74,9 @@ func (node *SQLVal) HexDecode() ([]byte, error) {
 	return dst, err
 }
 
+func (node *SQLVal) iExpr() {
+}
+
 // ValType specifies the type for SQLVal.
 type ValType int
 
