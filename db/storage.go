@@ -2,7 +2,7 @@ package db
 
 import (
 	"fmt"
-	"github.com/adzimzf/sqlite-go/sql"
+	"github.com/adzimzf/sqlite-go/pkg/sql"
 	"os"
 )
 

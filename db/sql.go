@@ -2,7 +2,7 @@ package db
 
 import (
 	"fmt"
-	sqlparser "github.com/adzimzf/sqlite-go/sql"
+	sql2 "github.com/adzimzf/sqlite-go/pkg/sql"
 )
 
 type QueryType int32
@@ -25,11 +25,17 @@ type QueryInfo struct {
 	//TargetCols_          []*string                // INSERT
 	//Values_              []*types.Value           // INSERT
 	//OnExpressions_       *BinaryOpExpression      // SELECT (with JOIN)
-	JoinTables []string // SELECT
-	//WhereExpression_     *BinaryOpExpression      // SELECT, UPDATE, DELETE
+	JoinTables       []string         // SELECT
+	WhereExpression_ *WhereExpression // SELECT, UPDATE, DELETE
 	//LimitNum_            int32                    // SELECT
 	//OffsetNum_           int32                    // SELECT
 	//OrderByExpressions_  []*OrderByExpression     // SELECT
+}
+
+type WhereExpression struct {
+	Operator string
+	Left     string
+	Right    string
 }
 
 func (q *QueryInfo) FieldNameByTable(tbName string) []string {
@@ -71,7 +77,7 @@ func (a AggregationType) String() string {
 
 func ExtractQueryInfo(sql string) (QueryInfo, error) {
 	var res QueryInfo
-	stmt, err := sqlparser.Parse(sql)
+	stmt, err := sql2.Parse(sql)
 	if err != nil {
 		return res, err
 	}
@@ -83,19 +89,19 @@ func ExtractQueryInfo(sql string) (QueryInfo, error) {
 	return res, nil
 }
 
-func RootSQLVisitor(tree sqlparser.Statement, queryInfo *QueryInfo) error {
-	return sqlparser.Walk(func(node sqlparser.SQLNode) (kontinue bool, err error) {
+func RootSQLVisitor(tree sql2.Statement, queryInfo *QueryInfo) error {
+	return sql2.Walk(func(node sql2.SQLNode) (kontinue bool, err error) {
 		switch nodeType := node.(type) {
-		case *sqlparser.Select:
+		case *sql2.Select:
 			queryInfo.QueryType = SELECT
 			return true, nil
-		case *sqlparser.TableName:
+		case *sql2.TableName:
 			queryInfo.SelectFields = append(queryInfo.SelectFields, &SelectFieldExpression{
-				TableName: node.(*sqlparser.TableName).Name.String(),
+				TableName: node.(*sql2.TableName).Name.String(),
 				ColName:   "",
 			})
-		case sqlparser.SelectExprs:
-			q := node.(sqlparser.SelectExprs)
+		case sql2.SelectExprs:
+			q := node.(sql2.SelectExprs)
 			for i := 0; i < len(q); i++ {
 				var selExp SelectFieldExpression
 				errSelect := SelectExprsVisitor(q[i], &selExp)
@@ -106,11 +112,24 @@ func RootSQLVisitor(tree sqlparser.Statement, queryInfo *QueryInfo) error {
 			}
 			return false, nil
 		//case *sqlparser.Union:
-
+		case *sql2.Where:
+			n := node.(*sql2.Where)
+			if n.Type != "where" {
+				return false, nil
+			}
+			nc := n.Expr.(*sql2.ComparisonExpr)
+			queryInfo.WhereExpression_ = &WhereExpression{
+				Operator: nc.Operator,
+			}
+			lc := nc.Left.(*sql2.ColName)
+			queryInfo.WhereExpression_.Left = lc.Name.String()
+			rc := nc.Right.(*sql2.SQLVal)
+			queryInfo.WhereExpression_.Right = string(rc.Val)
+			return false, nil
 		//case sqlparser.Comments:
 		// we don't care about comments
-		case sqlparser.TableExprs:
-			exps := node.(sqlparser.TableExprs)
+		case sql2.TableExprs:
+			exps := node.(sql2.TableExprs)
 			tblNames := make([]string, len(exps))
 			for i, exp := range exps {
 				err = TableExprVisitor(exp, &tblNames[i])
@@ -132,15 +151,15 @@ func RootSQLVisitor(tree sqlparser.Statement, queryInfo *QueryInfo) error {
 	}, tree)
 }
 
-func TableExprVisitor(node sqlparser.TableExpr, tableName *string) error {
-	return sqlparser.Walk(func(node sqlparser.SQLNode) (kontinue bool, err error) {
+func TableExprVisitor(node sql2.TableExpr, tableName *string) error {
+	return sql2.Walk(func(node sql2.SQLNode) (kontinue bool, err error) {
 		switch nodeType := node.(type) {
-		case *sqlparser.AliasedTableExpr:
+		case *sql2.AliasedTableExpr:
 			return true, nil
-		case sqlparser.TableName:
-			*tableName = node.(sqlparser.TableName).Name.String()
+		case sql2.TableName:
+			*tableName = node.(sql2.TableName).Name.String()
 			return false, nil
-		case sqlparser.TableIdent:
+		case sql2.TableIdent:
 			return false, nil
 		//case *sqlparser.IndexHints:
 		//	return false, nil
@@ -150,12 +169,12 @@ func TableExprVisitor(node sqlparser.TableExpr, tableName *string) error {
 	}, node)
 }
 
-func SelectExprsVisitor(node sqlparser.SQLNode, selectFieldExp *SelectFieldExpression) error {
-	return sqlparser.Walk(func(node sqlparser.SQLNode) (kontinue bool, err error) {
+func SelectExprsVisitor(node sql2.SQLNode, selectFieldExp *SelectFieldExpression) error {
+	return sql2.Walk(func(node sql2.SQLNode) (kontinue bool, err error) {
 		switch nodeType := node.(type) {
-		case *sqlparser.FuncExpr:
+		case *sql2.FuncExpr:
 			selectFieldExp.IsAgg = true
-			funcExp := node.(*sqlparser.FuncExpr)
+			funcExp := node.(*sql2.FuncExpr)
 			switch funcExp.Name.String() {
 			case "count":
 				selectFieldExp.AggType = COUNT_AGGREGATE
@@ -163,21 +182,21 @@ func SelectExprsVisitor(node sqlparser.SQLNode, selectFieldExp *SelectFieldExpre
 			default:
 				return false, fmt.Errorf("unknown aggregation function: %s", funcExp.Name.String())
 			}
-		case *sqlparser.StarExpr:
+		case *sql2.StarExpr:
 			selectFieldExp.ColName = "*"
 			return true, nil
-		case sqlparser.TableName:
-			selectFieldExp.TableName = node.(sqlparser.TableName).Name.String()
-		case sqlparser.TableIdent:
+		case sql2.TableName:
+			selectFieldExp.TableName = node.(sql2.TableName).Name.String()
+		case sql2.TableIdent:
 
-		case sqlparser.ColIdent:
+		case sql2.ColIdent:
 			//selectFieldExp.ColName =
-		case sqlparser.SelectExpr:
-		case sqlparser.SelectExprs:
+		case sql2.SelectExpr:
+		case sql2.SelectExprs:
 
-		case *sqlparser.AliasedExpr:
-		case *sqlparser.ColName:
-			selectFieldExp.ColName = node.(*sqlparser.ColName).Name.String()
+		case *sql2.AliasedExpr:
+		case *sql2.ColName:
+			selectFieldExp.ColName = node.(*sql2.ColName).Name.String()
 
 		default:
 			return false, fmt.Errorf("SelectExprsVisitor unsupported node type: %T", nodeType)
@@ -186,8 +205,8 @@ func SelectExprsVisitor(node sqlparser.SQLNode, selectFieldExp *SelectFieldExpre
 	}, node)
 }
 
-func TableSchemaVisitor(node sqlparser.SQLNode, info *TableSchemaInfo) error {
-	parse, ok := node.(*sqlparser.DDL)
+func TableSchemaVisitor(node sql2.SQLNode, info *TableSchemaInfo) error {
+	parse, ok := node.(*sql2.DDL)
 	if !ok {
 		return fmt.Errorf("TableSchemaVisitor unsupported node type: %T", node)
 	}
@@ -207,7 +226,7 @@ func TableSchemaVisitor(node sqlparser.SQLNode, info *TableSchemaInfo) error {
 			Type: fieldType,
 		}
 
-		if column.Type.KeyOpt == sqlparser.ColKeyPrimary {
+		if column.Type.KeyOpt == sql2.ColKeyPrimary {
 			info.PrimaryKey = columnInfo
 		}
 		info.Columns = append(info.Columns, columnInfo)
